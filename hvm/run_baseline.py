@@ -15,6 +15,8 @@ import os
 
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+
 
 from baseline_setup import (
     load_feature_npz,
@@ -167,6 +169,45 @@ def parse_args():
     return args
 
 
+def plot_history_csv(history_csv_path, output_dir):
+    """
+    Read history.csv and save plots of training ELBO and validation RMSE.
+    """
+    history_df = pd.read_csv(history_csv_path)
+
+    # Plot validation RMSE
+    if "iter" in history_df.columns and "valid_rmse" in history_df.columns:
+        plt.figure(figsize=(8, 5))
+        plt.plot(history_df["iter"], history_df["valid_rmse"], marker="o")
+        plt.xlabel("Iteration")
+        plt.ylabel("Validation RMSE")
+        plt.title("Validation RMSE over Training")
+        plt.grid(True)
+        plt.tight_layout()
+
+        valid_plot_path = os.path.join(output_dir, "valid_rmse_plot.png")
+        plt.savefig(valid_plot_path, dpi=200)
+        plt.close()
+
+        print("valid RMSE plot:", valid_plot_path)
+
+    # Plot training ELBO
+    if "iter" in history_df.columns and "train_elbo" in history_df.columns:
+        plt.figure(figsize=(8, 5))
+        plt.plot(history_df["iter"], history_df["train_elbo"], marker="o")
+        plt.xlabel("Iteration")
+        plt.ylabel("Minibatch ELBO / N")
+        plt.title("Training ELBO over Training")
+        plt.grid(True)
+        plt.tight_layout()
+
+        elbo_plot_path = os.path.join(output_dir, "train_elbo_plot.png")
+        plt.savefig(elbo_plot_path, dpi=200)
+        plt.close()
+
+        print("training ELBO plot:", elbo_plot_path)
+
+
 def save_results(args, hist, valid_rmse, test_rmse, test_pred_mean, test_pred_std, y_test_N):
     results = {
         "feature_file": args.feature_file,
@@ -194,6 +235,7 @@ def save_results(args, hist, valid_rmse, test_rmse, test_pred_mean, test_pred_st
         json.dump(results, f, indent=2)
 
     pd.DataFrame(hist).to_csv(history_csv_path, index=False)
+    plot_history_csv(history_csv_path, args.run_dir)
 
     np.savez_compressed(
         predictions_npz_path,
