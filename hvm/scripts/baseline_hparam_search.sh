@@ -8,6 +8,6 @@
 #SBATCH --cpus-per-task=32
 #SBATCH --mem 200G
 #SBATCH --time=0-00:30:00
-#SBATCH --array=0-23%8        # 24 jobs, max 8 running at once
+#SBATCH --array=0-31%8        # 32 jobs, max 8 running at once
 
-pixi run python scripts/run_hparam_job.py --task_id $SLURM_ARRAY_TASK_ID
+pixi run python scripts/run_baseline_hparam_job.sh --task_id $SLURM_ARRAY_TASK_ID
