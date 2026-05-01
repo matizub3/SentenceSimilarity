@@ -2,6 +2,7 @@ import subprocess
 import sys
 import itertools
 import argparse
+from pathlib import Path
 
 GRID = {
     "n_mc_samples":       [5, 20, 50, 100],
@@ -29,8 +30,11 @@ def main():
     params = combos[args.task_id]
     print(f"Running combo {args.task_id}: {params}")
 
+    repo_root = Path(__file__).resolve().parents[1]
+    run_baseline = repo_root / "run_baseline.py"
+
     cmd = [
-        "pixi", "run", "python", "run_baseline.py",
+        sys.executable, str(run_baseline),
         "--feature_file",       "sts17_octen_features.npz",
         "--hidden_sizes",       "100",
         "--n_iters",            "2000",
@@ -42,7 +46,7 @@ def main():
         "--use_sigmoid_output", params["use_sigmoid_output"],
     ]
 
-    subprocess.run(cmd, check=True)
+    subprocess.run(cmd, check=True, cwd=repo_root)
 
 if __name__ == "__main__":
     main()
