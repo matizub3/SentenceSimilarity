@@ -1,0 +1,116 @@
+Run args:
+{
+  "feature_file": "sts17_octen_features.npz",
+  "output_dir": "baseline_results",
+  "run_name": "arch_100_iters_2000_bs_32_mc_50_lr_0p001_prior_3p0_lik_0p1_qstd_0p05_linearout_seed_101",
+  "hidden_sizes": "100",
+  "use_sigmoid_output": false,
+  "n_iters": 2000,
+  "batch_size": 32,
+  "n_mc_samples": 50,
+  "step_size": 0.001,
+  "prior_stddev": 3.0,
+  "likelihood_stddev": 0.1,
+  "init_q_stddev": 0.05,
+  "seed": 101,
+  "print_every": 100,
+  "n_test_samples": 100,
+  "hidden_sizes_list": [
+    100
+  ],
+  "run_dir": "baseline_results/arch_100_iters_2000_bs_32_mc_50_lr_0p001_prior_3p0_lik_0p1_qstd_0p05_linearout_seed_101"
+}
+x shape: (5346, 12288)
+y shape: (5346,)
+pair shape: (5346,)
+y min/max: 0.0 1.0
+language pairs: ['ar-ar' 'en-ar' 'en-de' 'en-en' 'en-tr' 'es-en' 'es-es' 'fr-en' 'it-en'
+ 'ko-ko' 'nl-en']
+train: (4276, 12288) (4276,)
+valid: (534, 12288) (534,)
+test : (536, 12288) (536,)
+iter      1/2000 | time    54.1 sec | minibatch ELBO -138074.718750 | valid RMSE 0.522663
+iter    100/2000 | time    55.7 sec | minibatch ELBO -134371.031250 | valid RMSE 0.403080
+iter    200/2000 | time    57.4 sec | minibatch ELBO -130639.765625 | valid RMSE 0.214703
+iter    300/2000 | time    59.1 sec | minibatch ELBO -126933.164062 | valid RMSE 0.220607
+iter    400/2000 | time    60.8 sec | minibatch ELBO -123241.000000 | valid RMSE 0.174771
+iter    500/2000 | time    62.5 sec | minibatch ELBO -119576.890625 | valid RMSE 0.176428
+iter    600/2000 | time    64.2 sec | minibatch ELBO -115931.000000 | valid RMSE 0.190250
+iter    700/2000 | time    65.8 sec | minibatch ELBO -112309.640625 | valid RMSE 0.196812
+iter    800/2000 | time    67.5 sec | minibatch ELBO -108700.054688 | valid RMSE 0.185088
+iter    900/2000 | time    69.2 sec | minibatch ELBO -105129.804688 | valid RMSE 0.177743
+iter   1000/2000 | time    70.9 sec | minibatch ELBO -101598.125000 | valid RMSE 0.194761
+iter   1100/2000 | time    72.6 sec | minibatch ELBO -98087.437500 | valid RMSE 0.196780
+iter   1200/2000 | time    74.2 sec | minibatch ELBO -94612.765625 | valid RMSE 0.187234
+iter   1300/2000 | time    75.9 sec | minibatch ELBO -91170.726562 | valid RMSE 0.177450
+iter   1400/2000 | time    77.6 sec | minibatch ELBO -87777.210938 | valid RMSE 0.202096
+iter   1500/2000 | time    79.3 sec | minibatch ELBO -84424.671875 | valid RMSE 0.184514
+iter   1600/2000 | time    81.0 sec | minibatch ELBO -81115.734375 | valid RMSE 0.207395
+iter   1700/2000 | time    82.7 sec | minibatch ELBO -77856.851562 | valid RMSE 0.230199
+iter   1800/2000 | time    84.3 sec | minibatch ELBO -74649.085938 | valid RMSE 0.279138
+iter   1900/2000 | time    86.0 sec | minibatch ELBO -71501.445312 | valid RMSE 0.302039
+iter   2000/2000 | time    87.7 sec | minibatch ELBO -68409.679688 | valid RMSE 0.288923
+Validation RMSE: 0.2889226973056793
+Test RMSE: 0.1410699039697647
+Saved results to: baseline_results/arch_100_iters_2000_bs_32_mc_50_lr_0p001_prior_3p0_lik_0p1_qstd_0p05_linearout_seed_101
+results: baseline_results/arch_100_iters_2000_bs_32_mc_50_lr_0p001_prior_3p0_lik_0p1_qstd_0p05_linearout_seed_101/results.json
+history: baseline_results/arch_100_iters_2000_bs_32_mc_50_lr_0p001_prior_3p0_lik_0p1_qstd_0p05_linearout_seed_101/history.csv
+predictions: baseline_results/arch_100_iters_2000_bs_32_mc_50_lr_0p001_prior_3p0_lik_0p1_qstd_0p05_linearout_seed_101/predictions.npz
+Run args:
+{
+  "feature_file": "sts17_octen_features.npz",
+  "output_dir": "baseline_results",
+  "run_name": "arch_100_iters_2000_bs_32_mc_50_lr_0p001_prior_3p0_lik_0p1_qstd_0p05_linearout_seed_101",
+  "hidden_sizes": "100",
+  "use_sigmoid_output": false,
+  "n_iters": 2000,
+  "batch_size": 32,
+  "n_mc_samples": 50,
+  "step_size": 0.001,
+  "prior_stddev": 3.0,
+  "likelihood_stddev": 0.1,
+  "init_q_stddev": 0.05,
+  "seed": 101,
+  "print_every": 100,
+  "n_test_samples": 100,
+  "hidden_sizes_list": [
+    100
+  ],
+  "run_dir": "baseline_results/arch_100_iters_2000_bs_32_mc_50_lr_0p001_prior_3p0_lik_0p1_qstd_0p05_linearout_seed_101"
+}
+x shape: (5346, 12288)
+y shape: (5346,)
+pair shape: (5346,)
+y min/max: 0.0 1.0
+language pairs: ['ar-ar' 'en-ar' 'en-de' 'en-en' 'en-tr' 'es-en' 'es-es' 'fr-en' 'it-en'
+ 'ko-ko' 'nl-en']
+train: (4276, 12288) (4276,)
+valid: (534, 12288) (534,)
+test : (536, 12288) (536,)
+iter      1/2000 | time    54.0 sec | minibatch ELBO -138074.718750 | valid RMSE 0.522663
+iter    100/2000 | time    55.8 sec | minibatch ELBO -134371.031250 | valid RMSE 0.403080
+iter    200/2000 | time    57.5 sec | minibatch ELBO -130639.765625 | valid RMSE 0.214703
+iter    300/2000 | time    59.3 sec | minibatch ELBO -126933.164062 | valid RMSE 0.220607
+iter    400/2000 | time    61.0 sec | minibatch ELBO -123241.000000 | valid RMSE 0.174771
+iter    500/2000 | time    62.8 sec | minibatch ELBO -119576.890625 | valid RMSE 0.176428
+iter    600/2000 | time    64.5 sec | minibatch ELBO -115931.000000 | valid RMSE 0.190250
+iter    700/2000 | time    66.3 sec | minibatch ELBO -112309.640625 | valid RMSE 0.196812
+iter    800/2000 | time    68.1 sec | minibatch ELBO -108700.054688 | valid RMSE 0.185088
+iter    900/2000 | time    69.8 sec | minibatch ELBO -105129.804688 | valid RMSE 0.177743
+iter   1000/2000 | time    71.5 sec | minibatch ELBO -101598.125000 | valid RMSE 0.194761
+iter   1100/2000 | time    73.2 sec | minibatch ELBO -98087.437500 | valid RMSE 0.196780
+iter   1200/2000 | time    74.9 sec | minibatch ELBO -94612.765625 | valid RMSE 0.187234
+iter   1300/2000 | time    76.6 sec | minibatch ELBO -91170.726562 | valid RMSE 0.177450
+iter   1400/2000 | time    78.2 sec | minibatch ELBO -87777.210938 | valid RMSE 0.202096
+iter   1500/2000 | time    79.9 sec | minibatch ELBO -84424.671875 | valid RMSE 0.184514
+iter   1600/2000 | time    81.6 sec | minibatch ELBO -81115.734375 | valid RMSE 0.207395
+iter   1700/2000 | time    83.3 sec | minibatch ELBO -77856.851562 | valid RMSE 0.230199
+iter   1800/2000 | time    85.0 sec | minibatch ELBO -74649.085938 | valid RMSE 0.279138
+iter   1900/2000 | time    86.7 sec | minibatch ELBO -71501.445312 | valid RMSE 0.302039
+iter   2000/2000 | time    88.4 sec | minibatch ELBO -68409.679688 | valid RMSE 0.288923
+Validation RMSE: 0.2889226973056793
+Test RMSE: 0.1410699039697647
+Saved results to: baseline_results/arch_100_iters_2000_bs_32_mc_50_lr_0p001_prior_3p0_lik_0p1_qstd_0p05_linearout_seed_101
+results: baseline_results/arch_100_iters_2000_bs_32_mc_50_lr_0p001_prior_3p0_lik_0p1_qstd_0p05_linearout_seed_101/results.json
+history: baseline_results/arch_100_iters_2000_bs_32_mc_50_lr_0p001_prior_3p0_lik_0p1_qstd_0p05_linearout_seed_101/history.csv
+predictions: baseline_results/arch_100_iters_2000_bs_32_mc_50_lr_0p001_prior_3p0_lik_0p1_qstd_0p05_linearout_seed_101/predictions.npz
