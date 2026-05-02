@@ -451,6 +451,7 @@ def calc_elbo_one_sample_reparam(
         key,
         x_ND,
         y_N,
+        n_total_data=None,
         prior_stddev=3.0,
         likelihood_stddev=0.10,
         use_sigmoid_output=False):
@@ -482,10 +483,15 @@ def calc_elbo_one_sample_reparam(
         q_realstddev_params,
     )
 
-    N = x_ND.shape[0]
-    elbo = log_lik + log_prior - log_q
+    batch_size = x_ND.shape[0]
+    n_total = batch_size if n_total_data is None else n_total_data
 
-    return elbo / N
+    # Dataset-size-correct minibatch ELBO estimator:
+    # (N_total / B) * log p(y_batch | x_batch, theta) + log p(theta) - log q(theta)
+    # then normalized by N_total so values are comparable across batch sizes.
+    elbo = (n_total / batch_size) * log_lik + log_prior - log_q
+
+    return elbo / n_total
 
 
 def calc_elbo_reparam(
@@ -495,6 +501,7 @@ def calc_elbo_reparam(
         x_ND,
         y_N,
         n_mc_samples=5,
+        n_total_data=None,
         prior_stddev=3.0,
         likelihood_stddev=0.10,
         use_sigmoid_output=False):
@@ -512,6 +519,7 @@ def calc_elbo_reparam(
             keys[sample_id],
             x_ND,
             y_N,
+            n_total_data=n_total_data,
             prior_stddev=prior_stddev,
             likelihood_stddev=likelihood_stddev,
             use_sigmoid_output=use_sigmoid_output,
@@ -731,6 +739,7 @@ def train_mean_field_bnn_baseline(
             xb_BD,
             yb_B,
             n_mc_samples=n_mc_samples,
+            n_total_data=N,
             prior_stddev=prior_stddev,
             likelihood_stddev=likelihood_stddev,
             use_sigmoid_output=use_sigmoid_output,
@@ -767,7 +776,7 @@ def train_mean_field_bnn_baseline(
             history["valid_rmse"].append(float(valid_rmse))
 
             print(
-                "iter %6d/%d | time %7.1f sec | minibatch ELBO %.6f | valid RMSE %.6f"
+                "iter %6d/%d | time %7.1f sec | normalized ELBO %.6f | valid RMSE %.6f"
                 % (
                     iter_id,
                     n_iters,
