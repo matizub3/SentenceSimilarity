@@ -485,10 +485,6 @@ def calc_elbo_one_sample_reparam(
 
     batch_size = x_ND.shape[0]
     n_total = batch_size if n_total_data is None else n_total_data
-
-    # Dataset-size-correct minibatch ELBO estimator:
-    # (N_total / B) * log p(y_batch | x_batch, theta) + log p(theta) - log q(theta)
-    # then normalized by N_total so values are comparable across batch sizes.
     elbo = (n_total / batch_size) * log_lik + log_prior - log_q
 
     return elbo / n_total

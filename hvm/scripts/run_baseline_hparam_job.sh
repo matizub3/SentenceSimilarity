@@ -6,7 +6,7 @@ from pathlib import Path
 
 GRID = {
     "n_mc_samples":       [50, 100, 200],
-    "batch_size":         [128],
+    "batch_size":         [32, 64, 128],
     "use_sigmoid_output": ["true"],
     "likelihood_stddev":  [0.05, 0.1, 0.2, 0.5],
     "prior_stddev":       [0.5, 1.0, 3.0, 10.0],
