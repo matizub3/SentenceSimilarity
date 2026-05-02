@@ -40,13 +40,15 @@ def main():
         sys.executable, str(run_baseline),
         "--feature_file",       "sts17_octen_features.npz",
         "--hidden_sizes",       "100",
-        "--n_iters",            "2000",
+        "--n_iters",            str(params["iters"]),
         "--print_every",        "100",
         "--seed",               "101",
         "--output_dir",         "hparam_results",
         "--n_mc_samples",       str(params["n_mc_samples"]),
         "--batch_size",         str(params["batch_size"]),
         "--use_sigmoid_output", params["use_sigmoid_output"],
+        "--prior_stddev",       str(params["prior_stddev"]),
+        "--likelihood_stddev",  str(params["likelihood_stddev"]),
     ]
 
     subprocess.run(cmd, check=True, cwd=repo_root)

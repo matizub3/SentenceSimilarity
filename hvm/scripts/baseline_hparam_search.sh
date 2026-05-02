@@ -8,7 +8,7 @@
 #SBATCH --cpus-per-task=32
 #SBATCH --mem 200G
 #SBATCH --time=0-00:30:00
-#SBATCH --array=0-31%8        # 32 jobs, max 8 running at once
+#SBATCH --array=0-431%8       # must match scripts/run_baseline_hparam_job.sh GRID size (432)
 
 set -euo pipefail
 
