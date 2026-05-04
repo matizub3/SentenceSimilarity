@@ -1,0 +1,19 @@
+{
+  "feature_file": "sts17_octen_features.npz",
+  "hidden_sizes": "100",
+  "hidden_sizes_list": [
+    100
+  ],
+  "n_iters": 2000,
+  "batch_size": 64,
+  "n_mc_samples": 50,
+  "step_size": 0.001,
+  "prior_stddev": 1.0,
+  "likelihood_stddev": 0.5,
+  "init_q_stddev": 0.05,
+  "use_sigmoid_output": true,
+  "seed": 101,
+  "n_test_samples": 100,
+  "valid_rmse": 0.283464640378952,
+  "test_rmse": 0.14215101301670074
+}

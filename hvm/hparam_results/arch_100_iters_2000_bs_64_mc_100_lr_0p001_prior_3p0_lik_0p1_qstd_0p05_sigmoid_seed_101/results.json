@@ -14,6 +14,6 @@
   "use_sigmoid_output": true,
   "seed": 101,
   "n_test_samples": 100,
-  "valid_rmse": 0.2673417031764984,
-  "test_rmse": 0.13944251835346222
+  "valid_rmse": 0.16280733048915863,
+  "test_rmse": 0.1345466822385788
 }
