@@ -147,6 +147,64 @@ def plot_group(
     plt.close(fig)
 
 
+def make_safe_filename(name: str) -> str:
+    return "".join(ch if ch.isalnum() or ch in ("-", "_") else "_" for ch in name)
+
+
+def plot_single_metric(
+    *,
+    x_vals: list[float],
+    y_vals: list[float],
+    title: str,
+    y_label: str,
+    color: str,
+    out_path: Path,
+) -> None:
+    fig, ax = plt.subplots(1, 1, figsize=(7, 4.5))
+    ax.plot(x_vals, y_vals, color=color, linewidth=2.2)
+    ax.set_title(title, fontsize=10)
+    ax.set_xlabel("Iteration")
+    ax.set_ylabel(y_label)
+    ax.grid(alpha=0.25)
+    fig.tight_layout()
+    fig.savefig(out_path, dpi=180)
+    plt.close(fig)
+
+
+def plot_individual_model_metrics(
+    rows: list[dict[str, str]],
+    out_dir: Path,
+    history_resolver,
+    rank_col: str,
+    prefix: str,
+) -> None:
+    for i, row in enumerate(rows):
+        rank = row.get(rank_col, str(i + 1))
+        run_name = row["run_dir"]
+        safe_run = make_safe_filename(run_name)
+
+        history_path = history_resolver(row)
+        hist = read_history(history_path)
+
+        meta = f"#{rank} {run_name} | test={row.get('test_rmse', 'NA')} valid={row.get('valid_rmse', 'NA')}"
+        plot_single_metric(
+            x_vals=hist["iter"],
+            y_vals=hist["valid_rmse"],
+            title=f"{meta}\nValid RMSE vs Iteration",
+            y_label="Valid RMSE",
+            color="tab:blue",
+            out_path=out_dir / f"{prefix}_{rank}_{safe_run}_valid_rmse.png",
+        )
+        plot_single_metric(
+            x_vals=hist["iter"],
+            y_vals=hist["train_elbo"],
+            title=f"{meta}\nTrain ELBO vs Iteration",
+            y_label="Train ELBO",
+            color="tab:orange",
+            out_path=out_dir / f"{prefix}_{rank}_{safe_run}_train_elbo.png",
+        )
+
+
 def main() -> None:
     args = parse_args()
     hparam_dir = args.hparam_dir.resolve()
@@ -173,6 +231,21 @@ def main() -> None:
         out_path=out_dir / f"top{len(elbo_rows)}_elbo_models.png",
         history_resolver=lambda row: resolve_history_from_elbo_row(hparam_dir, row),
         rank_col="rank_best_elbo",
+    )
+
+    plot_individual_model_metrics(
+        rows=rmse_rows,
+        out_dir=out_dir,
+        history_resolver=lambda row: resolve_history_from_rmse_row(hparam_dir, row),
+        rank_col="rank_test_rmse",
+        prefix="top_rmse",
+    )
+    plot_individual_model_metrics(
+        rows=elbo_rows,
+        out_dir=out_dir,
+        history_resolver=lambda row: resolve_history_from_elbo_row(hparam_dir, row),
+        rank_col="rank_best_elbo",
+        prefix="top_elbo",
     )
 
     print(f"Wrote plots to: {out_dir}")
