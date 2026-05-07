@@ -1,0 +1,99 @@
+{
+  "predictions_file": "/Users/donatellosassaroli/Desktop/SentenceSimilarity/hvm/hparam_results/arch_100_iters_2000_bs_64_mc_50_lr_0p001_prior_0p5_lik_0p05_qstd_0p05_sigmoid_seed_101/predictions.npz",
+  "feature_file": "/Users/donatellosassaroli/Desktop/SentenceSimilarity/hvm/sts17_octen_features.npz",
+  "selection": "random",
+  "seed": 101,
+  "n_examples": 10,
+  "examples": [
+    {
+      "example_rank": 1,
+      "pred_row_in_test": 71,
+      "global_row_index": 3011,
+      "y_true": 0.03999999910593033,
+      "pred_mean": 0.07788874208927155,
+      "pred_std": 0.025684751570224762,
+      "plot_file": "/Users/donatellosassaroli/Desktop/SentenceSimilarity/hvm/hparam_results/plots/cdf_examples_arch_100_iters_2000_bs_64_mc_50_lr_0p001_prior_0p5_lik_0p05_qstd_0p05_sigmoid_seed_101/example_01_predrow_0071_global_3011.png"
+    },
+    {
+      "example_rank": 2,
+      "pred_row_in_test": 157,
+      "global_row_index": 5232,
+      "y_true": 0.8399999737739563,
+      "pred_mean": 0.8689367771148682,
+      "pred_std": 0.040837857872247696,
+      "plot_file": "/Users/donatellosassaroli/Desktop/SentenceSimilarity/hvm/hparam_results/plots/cdf_examples_arch_100_iters_2000_bs_64_mc_50_lr_0p001_prior_0p5_lik_0p05_qstd_0p05_sigmoid_seed_101/example_02_predrow_0157_global_5232.png"
+    },
+    {
+      "example_rank": 3,
+      "pred_row_in_test": 163,
+      "global_row_index": 1260,
+      "y_true": 0.9199999570846558,
+      "pred_mean": 0.7337549328804016,
+      "pred_std": 0.06424462050199509,
+      "plot_file": "/Users/donatellosassaroli/Desktop/SentenceSimilarity/hvm/hparam_results/plots/cdf_examples_arch_100_iters_2000_bs_64_mc_50_lr_0p001_prior_0p5_lik_0p05_qstd_0p05_sigmoid_seed_101/example_03_predrow_0163_global_1260.png"
+    },
+    {
+      "example_rank": 4,
+      "pred_row_in_test": 190,
+      "global_row_index": 344,
+      "y_true": 0.1599999964237213,
+      "pred_mean": 0.4373892545700073,
+      "pred_std": 0.09579251706600189,
+      "plot_file": "/Users/donatellosassaroli/Desktop/SentenceSimilarity/hvm/hparam_results/plots/cdf_examples_arch_100_iters_2000_bs_64_mc_50_lr_0p001_prior_0p5_lik_0p05_qstd_0p05_sigmoid_seed_101/example_04_predrow_0190_global_344.png"
+    },
+    {
+      "example_rank": 5,
+      "pred_row_in_test": 212,
+      "global_row_index": 671,
+      "y_true": 1.0,
+      "pred_mean": 0.9337113499641418,
+      "pred_std": 0.014308287762105465,
+      "plot_file": "/Users/donatellosassaroli/Desktop/SentenceSimilarity/hvm/hparam_results/plots/cdf_examples_arch_100_iters_2000_bs_64_mc_50_lr_0p001_prior_0p5_lik_0p05_qstd_0p05_sigmoid_seed_101/example_05_predrow_0212_global_671.png"
+    },
+    {
+      "example_rank": 6,
+      "pred_row_in_test": 315,
+      "global_row_index": 640,
+      "y_true": 0.12000000476837158,
+      "pred_mean": 0.14308509230613708,
+      "pred_std": 0.045235563069581985,
+      "plot_file": "/Users/donatellosassaroli/Desktop/SentenceSimilarity/hvm/hparam_results/plots/cdf_examples_arch_100_iters_2000_bs_64_mc_50_lr_0p001_prior_0p5_lik_0p05_qstd_0p05_sigmoid_seed_101/example_06_predrow_0315_global_640.png"
+    },
+    {
+      "example_rank": 7,
+      "pred_row_in_test": 331,
+      "global_row_index": 608,
+      "y_true": 0.03999999910593033,
+      "pred_mean": 0.17914925515651703,
+      "pred_std": 0.05250169709324837,
+      "plot_file": "/Users/donatellosassaroli/Desktop/SentenceSimilarity/hvm/hparam_results/plots/cdf_examples_arch_100_iters_2000_bs_64_mc_50_lr_0p001_prior_0p5_lik_0p05_qstd_0p05_sigmoid_seed_101/example_07_predrow_0331_global_608.png"
+    },
+    {
+      "example_rank": 8,
+      "pred_row_in_test": 368,
+      "global_row_index": 1134,
+      "y_true": 0.5600000023841858,
+      "pred_mean": 0.2429123818874359,
+      "pred_std": 0.06810355931520462,
+      "plot_file": "/Users/donatellosassaroli/Desktop/SentenceSimilarity/hvm/hparam_results/plots/cdf_examples_arch_100_iters_2000_bs_64_mc_50_lr_0p001_prior_0p5_lik_0p05_qstd_0p05_sigmoid_seed_101/example_08_predrow_0368_global_1134.png"
+    },
+    {
+      "example_rank": 9,
+      "pred_row_in_test": 417,
+      "global_row_index": 4142,
+      "y_true": 0.800000011920929,
+      "pred_mean": 0.8972849249839783,
+      "pred_std": 0.03177885338664055,
+      "plot_file": "/Users/donatellosassaroli/Desktop/SentenceSimilarity/hvm/hparam_results/plots/cdf_examples_arch_100_iters_2000_bs_64_mc_50_lr_0p001_prior_0p5_lik_0p05_qstd_0p05_sigmoid_seed_101/example_09_predrow_0417_global_4142.png"
+    },
+    {
+      "example_rank": 10,
+      "pred_row_in_test": 498,
+      "global_row_index": 421,
+      "y_true": 0.6000000238418579,
+      "pred_mean": 0.40779054164886475,
+      "pred_std": 0.10038821399211884,
+      "plot_file": "/Users/donatellosassaroli/Desktop/SentenceSimilarity/hvm/hparam_results/plots/cdf_examples_arch_100_iters_2000_bs_64_mc_50_lr_0p001_prior_0p5_lik_0p05_qstd_0p05_sigmoid_seed_101/example_10_predrow_0498_global_421.png"
+    }
+  ]
+}

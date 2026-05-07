@@ -8,7 +8,7 @@
 #SBATCH --cpus-per-task=32
 #SBATCH --mem 200G
 #SBATCH --time=0-00:30:00
-#SBATCH --array=0-1%8       # last index = GRID_TASK_COUNT - 1 in scripts/run_baseline_hparam_job.sh (currently 2 tasks)
+#SBATCH --array=0-2%3       # 3 architectures, run up to 3 in parallel
 
 set -euo pipefail
 

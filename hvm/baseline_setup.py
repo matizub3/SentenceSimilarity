@@ -658,6 +658,10 @@ def evaluate_rmse_with_posterior_predictive_mean(
         seed=202):
     """
     RMSE using posterior predictive mean.
+
+    Returns:
+        rmse, pred_mean_N, pred_std_N, preds_SN
+        where preds_SN has shape [n_samples, n_examples].
     """
     pred_mean_N, pred_std_N, preds_SN = predict_with_posterior_samples(
         q_mean_params,
@@ -670,7 +674,7 @@ def evaluate_rmse_with_posterior_predictive_mean(
 
     rmse = jnp.sqrt(jnp.mean((pred_mean_N - y_N) ** 2))
 
-    return rmse, pred_mean_N, pred_std_N
+    return rmse, pred_mean_N, pred_std_N, preds_SN
 
 
 def train_mean_field_bnn_baseline(

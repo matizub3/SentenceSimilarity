@@ -174,6 +174,7 @@ def save_results(
     test_rmse,
     test_pred_mean,
     test_pred_std,
+    test_pred_samples,
     y_test_N,
     test_ids,
 ):
@@ -208,6 +209,7 @@ def save_results(
         predictions_npz_path,
         test_pred_mean=np.array(test_pred_mean),
         test_pred_std=np.array(test_pred_std),
+        test_pred_samples=np.array(test_pred_samples),
         y_test_N=np.array(y_test_N),
         test_global_row_index=np.asarray(test_ids, dtype=np.int64),
     )
@@ -270,7 +272,7 @@ def main():
         use_sigmoid_output=args.use_sigmoid_output,
     )
 
-    test_rmse, test_pred_mean, test_pred_std = evaluate_rmse_with_posterior_predictive_mean(
+    test_rmse, test_pred_mean, test_pred_std, test_pred_samples = evaluate_rmse_with_posterior_predictive_mean(
         q_mean,
         q_realstddev,
         arrays["x_test_ND"],
@@ -290,6 +292,7 @@ def main():
         test_rmse=test_rmse,
         test_pred_mean=test_pred_mean,
         test_pred_std=test_pred_std,
+        test_pred_samples=test_pred_samples,
         y_test_N=arrays["y_test_N"],
         test_ids=np.asarray(arrays["test_ids"]),
     )

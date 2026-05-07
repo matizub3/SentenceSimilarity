@@ -5,7 +5,7 @@ import argparse
 from pathlib import Path
 
 GRID = {
-    "hidden_sizes":       ["100-30"],
+    "hidden_sizes":       ["100", "100-30", "100-30-15"],
     "n_mc_samples":       [50],
     "batch_size":         [64],
     "use_sigmoid_output": ["true"],
