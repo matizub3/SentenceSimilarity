@@ -2,6 +2,10 @@
 """
 Plot baseline test predictions with posterior uncertainty error bars.
 
+Points are ordered by ground-truth similarity (low to high). By default every
+test point is plotted; pass --max-points to subsample for readability.
+Overlays a linear fit to predicted means vs rank and a band equal to that fit
+± smoothed local epistemic standard deviation along the rank axis.
 Default behavior uses the #1 run from leaderboard_top10.csv.
 """
 
@@ -46,14 +50,28 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--max-points",
         type=int,
-        default=120,
-        help="Maximum number of test points shown for readability.",
+        default=None,
+        metavar="N",
+        help="Plot at most N test points after sorting (default: all test points).",
     )
     parser.add_argument(
         "--out-dir",
         type=Path,
         default=None,
         help="Output directory (default: <hparam-dir>/plots).",
+    )
+    parser.add_argument(
+        "--fit-std-bins",
+        type=int,
+        default=None,
+        metavar="B",
+        help="Bins along rank for smoothing mean(test_pred_std) around the linear "
+        "fit band (default: ~max(8, n_points//25), capped).",
+    )
+    parser.add_argument(
+        "--no-prediction-fit",
+        action="store_true",
+        help="Do not draw the linear fit or ±std band on predictions.",
     )
     return parser.parse_args()
 
@@ -76,10 +94,39 @@ def choose_run_dir(args: argparse.Namespace, hparam_dir: Path) -> str:
     return rows[idx]["run_dir"]
 
 
-def downsample_indices(n: int, max_points: int) -> np.ndarray:
+def downsample_sorted_positions(n: int, max_points: int) -> np.ndarray:
+    """Indices along an array already sorted by ground truth (0 .. n-1)."""
     if n <= max_points:
         return np.arange(n)
     return np.linspace(0, n - 1, max_points).astype(int)
+
+
+def binned_mean_on_axis(
+    axis_vals: np.ndarray, values: np.ndarray, n_bins: int
+) -> tuple[np.ndarray, np.ndarray]:
+    """Equal-width bins on axis_vals; mean(values) per bin (drops empty bins)."""
+    axis_vals = np.asarray(axis_vals, dtype=np.float64)
+    values = np.asarray(values, dtype=np.float64)
+    lo, hi = float(np.min(axis_vals)), float(np.max(axis_vals))
+    if hi <= lo:
+        return np.array([lo]), np.array([float(np.mean(values))])
+    edges = np.linspace(lo, hi, n_bins + 1)
+    centers = 0.5 * (edges[:-1] + edges[1:])
+    means = np.full(n_bins, np.nan)
+    for i in range(n_bins):
+        mask = (axis_vals >= edges[i]) & (axis_vals < edges[i + 1])
+        if i == n_bins - 1:
+            mask = (axis_vals >= edges[i]) & (axis_vals <= edges[i + 1])
+        if np.any(mask):
+            means[i] = float(np.mean(values[mask]))
+    valid = ~np.isnan(means)
+    return centers[valid], means[valid]
+
+
+def default_fit_std_bins(n_points: int) -> int:
+    if n_points <= 1:
+        return 1
+    return int(max(8, min(48, n_points // 25)))
 
 
 def main() -> None:
@@ -122,13 +169,65 @@ def main() -> None:
     y_std = y_std[:n]
     y_true = y_true[:n]
 
-    keep = downsample_indices(n, args.max_points)
-    x = np.arange(n)[keep]
+    sort_order = np.argsort(y_true, kind="stable")
+    y_pred = y_pred[sort_order]
+    y_std = y_std[sort_order]
+    y_true = y_true[sort_order]
+
+    if args.max_points is not None and args.max_points < 1:
+        raise ValueError("--max-points must be >= 1 when provided")
+    if args.fit_std_bins is not None and args.fit_std_bins < 1:
+        raise ValueError("--fit-std-bins must be >= 1 when provided")
+    max_points = n if args.max_points is None else args.max_points
+    keep = downsample_sorted_positions(n, max_points)
+    x = np.arange(len(keep))
     y_pred_k = y_pred[keep]
     y_std_k = y_std[keep]
     y_true_k = y_true[keep]
 
     fig, ax = plt.subplots(1, 1, figsize=(11, 5.2))
+
+    x_f = x.astype(np.float64)
+    if (
+        not args.no_prediction_fit
+        and len(y_pred_k) >= 2
+        and (np.max(x_f) - np.min(x_f)) > 0
+    ):
+        n_bins = (
+            args.fit_std_bins
+            if args.fit_std_bins is not None
+            else default_fit_std_bins(len(x))
+        )
+        n_bins = max(1, int(n_bins))
+
+        coef = np.polyfit(x_f, y_pred_k.astype(np.float64), 1)
+        y_fit = np.polyval(coef, x_f).astype(np.float64)
+
+        cx, mean_std = binned_mean_on_axis(x_f, y_std_k.astype(np.float64), n_bins)
+        if len(cx) == 0:
+            sigma_line = np.full_like(x_f, float(np.mean(y_std_k)))
+        else:
+            sigma_line = np.interp(x_f, cx, mean_std)
+
+        ax.fill_between(
+            x_f,
+            y_fit - sigma_line,
+            y_fit + sigma_line,
+            alpha=0.22,
+            color="tab:green",
+            zorder=1,
+            label="Linear fit ± smoothed epistemic σ",
+        )
+        ax.plot(
+            x_f,
+            y_fit,
+            color="darkgreen",
+            linewidth=2.0,
+            linestyle="-",
+            zorder=2,
+            label="Linear fit (predictions vs rank)",
+        )
+
     ax.errorbar(
         x,
         y_pred_k,
@@ -140,6 +239,7 @@ def main() -> None:
         capsize=2.0,
         alpha=0.85,
         color="tab:blue",
+        zorder=3,
         label="Prediction ±1 std",
     )
     ax.scatter(
@@ -148,13 +248,14 @@ def main() -> None:
         s=14,
         alpha=0.7,
         color="tab:orange",
+        zorder=4,
         label="Ground truth",
     )
     ax.set_title(
         f"Test Predictions with Posterior Uncertainty\n{run_dir}",
         fontsize=10,
     )
-    ax.set_xlabel("Test sample index")
+    ax.set_xlabel("Rank along test set sorted by ground truth (low → high)")
     ax.set_ylabel("Similarity score")
     ax.grid(alpha=0.25)
     ax.legend(loc="best")

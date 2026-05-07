@@ -5,18 +5,24 @@ import argparse
 from pathlib import Path
 
 GRID = {
-    "n_mc_samples":       [50, 100, 200],
-    "batch_size":         [32, 64, 128],
+    "hidden_sizes":       ["100-30"],
+    "n_mc_samples":       [50],
+    "batch_size":         [64],
     "use_sigmoid_output": ["true"],
-    "likelihood_stddev":  [0.05, 0.1, 0.2, 0.5],
-    "prior_stddev":       [0.5, 1.0, 3.0, 10.0],
-    "iters":              [2000, 50000, 10000]
+    "likelihood_stddev":  [0.05],
+    "prior_stddev":       [0.5],
+    "iters":              [2000],
 }
 
 def make_combinations(grid):
     keys = list(grid.keys())
     values = list(grid.values())
     return [dict(zip(keys, combo)) for combo in itertools.product(*values)]
+
+
+# Must match Slurm --array upper bound in baseline_hparam_search.sh (inclusive last index).
+GRID_TASK_COUNT = len(make_combinations(GRID))
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -39,7 +45,7 @@ def main():
     cmd = [
         sys.executable, str(run_baseline),
         "--feature_file",       "sts17_octen_features.npz",
-        "--hidden_sizes",       "100",
+        "--hidden_sizes",       params["hidden_sizes"],
         "--n_iters",            str(params["iters"]),
         "--print_every",        "100",
         "--seed",               "101",
