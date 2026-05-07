@@ -1,0 +1,12 @@
+language_pair,n_in_worst_subset,pct_of_worst_subset,n_in_full_test,frac_pair_test_in_worst
+ko-ko,31,62.0,286,0.10839160839160839
+en-tr,6,12.0,25,0.24
+en-ar,4,8.0,25,0.16
+ar-ar,3,6.0,25,0.12
+es-es,3,6.0,25,0.12
+es-en,2,4.0,25,0.08
+en-de,1,2.0,25,0.04
+en-en,0,0.0,25,0.0
+fr-en,0,0.0,25,0.0
+it-en,0,0.0,25,0.0
+nl-en,0,0.0,25,0.0

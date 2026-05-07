@@ -3,7 +3,7 @@
 Plot baseline test predictions with posterior uncertainty error bars.
 
 Points are ordered by ground-truth similarity (low to high). By default every
-test point is plotted; pass --max-points to subsample for readability.
+test point is plotted (--max-points 0); pass a positive cap to subsample.
 Overlays a linear fit to predicted means vs rank and a band equal to that fit
 ± smoothed local epistemic standard deviation along the rank axis.
 Default behavior uses the #1 run from leaderboard_top10.csv.
@@ -15,6 +15,9 @@ import argparse
 import csv
 from pathlib import Path
 
+import matplotlib
+
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -50,9 +53,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--max-points",
         type=int,
-        default=None,
+        default=0,
         metavar="N",
-        help="Plot at most N test points after sorting (default: all test points).",
+        help="Plot at most N test points after sorting; use 0 for all (default).",
     )
     parser.add_argument(
         "--out-dir",
@@ -174,18 +177,24 @@ def main() -> None:
     y_std = y_std[sort_order]
     y_true = y_true[sort_order]
 
-    if args.max_points is not None and args.max_points < 1:
-        raise ValueError("--max-points must be >= 1 when provided")
+    if args.max_points < 0:
+        raise ValueError("--max-points must be >= 0 (use 0 for all test points)")
     if args.fit_std_bins is not None and args.fit_std_bins < 1:
         raise ValueError("--fit-std-bins must be >= 1 when provided")
-    max_points = n if args.max_points is None else args.max_points
+    max_points = n if args.max_points == 0 else args.max_points
     keep = downsample_sorted_positions(n, max_points)
     x = np.arange(len(keep))
     y_pred_k = y_pred[keep]
     y_std_k = y_std[keep]
     y_true_k = y_true[keep]
 
-    fig, ax = plt.subplots(1, 1, figsize=(11, 5.2))
+    mpts = len(keep)
+    fig_w = max(11.0, min(40.0, 0.052 * mpts + 7.0))
+    mrk = float(max(1.1, min(3.2, 380.0 / max(mpts, 1))))
+    ecap = float(max(0.4, min(2.0, 140.0 / max(mpts, 1))))
+    elw = float(max(0.35, min(1.0, 120.0 / max(mpts, 1))))
+
+    fig, ax = plt.subplots(1, 1, figsize=(fig_w, 5.5))
 
     x_f = x.astype(np.float64)
     if (
@@ -233,11 +242,11 @@ def main() -> None:
         y_pred_k,
         yerr=y_std_k,
         fmt="o",
-        markersize=3.0,
-        linewidth=1.0,
-        elinewidth=1.0,
-        capsize=2.0,
-        alpha=0.85,
+        markersize=mrk,
+        linewidth=0.8,
+        elinewidth=elw,
+        capsize=ecap,
+        alpha=0.78,
         color="tab:blue",
         zorder=3,
         label="Prediction ±1 std",
@@ -245,8 +254,8 @@ def main() -> None:
     ax.scatter(
         x,
         y_true_k,
-        s=14,
-        alpha=0.7,
+        s=max(8.0, mrk * 4.2),
+        alpha=0.65,
         color="tab:orange",
         zorder=4,
         label="Ground truth",
@@ -265,7 +274,7 @@ def main() -> None:
     fig.savefig(out_path, dpi=180)
     plt.close(fig)
 
-    print(f"Wrote: {out_path}")
+    print(f"Plotted {mpts} test point(s) (of {n} in predictions). Wrote: {out_path}")
 
 
 if __name__ == "__main__":

@@ -167,7 +167,16 @@ def parse_args():
     return args
 
 
-def save_results(args, hist, valid_rmse, test_rmse, test_pred_mean, test_pred_std, y_test_N):
+def save_results(
+    args,
+    hist,
+    valid_rmse,
+    test_rmse,
+    test_pred_mean,
+    test_pred_std,
+    y_test_N,
+    test_ids,
+):
     results = {
         "feature_file": args.feature_file,
         "hidden_sizes": args.hidden_sizes,
@@ -200,6 +209,7 @@ def save_results(args, hist, valid_rmse, test_rmse, test_pred_mean, test_pred_st
         test_pred_mean=np.array(test_pred_mean),
         test_pred_std=np.array(test_pred_std),
         y_test_N=np.array(y_test_N),
+        test_global_row_index=np.asarray(test_ids, dtype=np.int64),
     )
 
     print("Saved results to:", args.run_dir)
@@ -281,6 +291,7 @@ def main():
         test_pred_mean=test_pred_mean,
         test_pred_std=test_pred_std,
         y_test_N=arrays["y_test_N"],
+        test_ids=np.asarray(arrays["test_ids"]),
     )
 
 
