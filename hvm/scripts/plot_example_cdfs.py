@@ -20,6 +20,17 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
+plt.rcParams["font.family"] = "sans-serif"
+plt.rcParams["font.sans-serif"] = [
+    "AppleGothic",
+    "Malgun Gothic",
+    "NanumGothic",
+    "Noto Sans CJK KR",
+    "Arial Unicode MS",
+    "DejaVu Sans",
+]
+plt.rcParams["axes.unicode_minus"] = False
+
 
 HVM_ROOT = Path(__file__).resolve().parents[1]
 
@@ -143,7 +154,7 @@ def plot_one(
     ax.set_xlabel("Similarity value")
     ax.set_ylabel("CDF")
     ax.grid(alpha=0.25)
-    ax.legend(loc="lower right")
+    ax.legend(loc="lower left")
     ax.set_title(
         f"row={row_idx} | y_true={y_true:.4f} | pred_mean={y_pred:.4f} | pred_std={y_std:.4f}",
         fontsize=10,
