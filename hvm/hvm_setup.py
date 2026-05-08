@@ -8,27 +8,17 @@ Hierarchical Variational Model idea:
     lambda  = planar_flow_K(lambda0; theta)
     z_i     ~ q(z_i | lambda_i)
 
-Here z is the flattened vector of all Bayesian MLP weights and biases.  Each
+Here z is the flattened vector of all Bayesian MLP weights and biases. Each
 weight/bias z_i has two variational parameters inside lambda:
 
     lambda_i = (mean_i, rho_i)
     q(z_i | lambda_i) = Normal(mean_i, softplus(rho_i)^2)
 
-The auxiliary distribution r is the paper's factorized product-of-Gaussians
-form over lambda0 conditioned elementwise on z:
+Note: this implementation evaluates the auxiliary distribution on transformed
+lambda, so the actual auxiliary term is r(lambda | z), not r(lambda0 | z).
 
-    r(lambda0 | z; phi) = prod_j Normal(lambda0_j | a_j * cond_j(z) + b_j, sigma_j^2)
-
-where cond(z) = [z, z], so both the mean and rho coordinates of lambda0 are
-conditioned locally on the corresponding latent weight/bias value.
-
-The objective is the hierarchical ELBO lower bound:
-
-    E_q [log p(y, z) + log r(lambda0 | z) - log q(z | lambda) - log q(lambda)]
-
-where q(lambda) is the density induced by the normalizing flow prior.
-
-This is intentionally kept compatible with baseline_setup.py.
+The default training objective below uses a data-emphasized hierarchical ELBO
+(DE-HVM ELBO) with stable per-datapoint minibatch scaling.
 """
 
 import time
@@ -50,6 +40,20 @@ from baseline_setup import (
     zeros_like_pytree,
     adam_update_pytree,
 )
+
+
+# ---------------------------------------------------------------------
+# Checkpoint helpers
+# ---------------------------------------------------------------------
+
+def pytree_to_numpy(pytree):
+    """Copy a JAX pytree to CPU-backed NumPy arrays so it is safe to pickle."""
+    return jax.tree_util.tree_map(lambda x: np.asarray(jax.device_get(x)), pytree)
+
+
+def pytree_to_jax(pytree):
+    """Convert a NumPy-backed checkpoint pytree back to JAX arrays."""
+    return jax.tree_util.tree_map(lambda x: jnp.asarray(x), pytree)
 
 
 # ---------------------------------------------------------------------
@@ -184,12 +188,12 @@ def sample_z_from_lambda(lambda_D, key, min_stddev=1e-5):
 
 
 # ---------------------------------------------------------------------
-# Auxiliary r(lambda0 | z; phi): product of Gaussians
+# Auxiliary r(lambda | z; phi): product of Gaussians
 # ---------------------------------------------------------------------
 
 def init_aux_r_params(lambda_dim, seed=101, init_stddev=1.0):
     """
-    r(lambda0_j | z) = Normal(a_j * cond_j(z) + b_j, softplus(realstd_j)^2)
+    r(lambda_j | z) = Normal(a_j * cond_j(z) + b_j, softplus(realstd_j)^2)
 
     cond(z) = [z, z], so lambda_dim must be 2 * n_bnn_params.
     """
@@ -203,11 +207,51 @@ def init_aux_r_params(lambda_dim, seed=101, init_stddev=1.0):
     }
 
 
-def calc_log_r_lambda0_given_z(lambda0_D, z_P, aux_params):
+def calc_log_r_lambda_given_z(lambda_D, z_P, aux_params):
     cond_D = jnp.concatenate([z_P, z_P], axis=0)
     mean_D = aux_params["a"] * cond_D + aux_params["b"]
     std_D = jax.nn.softplus(aux_params["realstd"]) + 1e-5
-    return jnp.sum(jstats.norm.logpdf(lambda0_D, loc=mean_D, scale=std_D))
+
+    return jnp.sum(
+        jstats.norm.logpdf(lambda_D, loc=mean_D, scale=std_D)
+    )
+
+
+# ---------------------------------------------------------------------
+# Learnable model hyperparameters eta
+# ---------------------------------------------------------------------
+
+def init_hyper_params(prior_stddev=3.0, likelihood_stddev=0.10):
+    """
+    Positive model hyperparameters are represented on the unconstrained
+    real line and mapped through softplus during optimization.
+    """
+    return {
+        "prior_realstd": jnp.asarray(softplus_inverse(prior_stddev).astype(np.float32)),
+        "likelihood_realstd": jnp.asarray(softplus_inverse(likelihood_stddev).astype(np.float32)),
+    }
+
+
+def unpack_hyper_params(hyper_params):
+    prior_stddev = jax.nn.softplus(hyper_params["prior_realstd"]) + 1e-5
+    likelihood_stddev = jax.nn.softplus(hyper_params["likelihood_realstd"]) + 1e-5
+    return prior_stddev, likelihood_stddev
+
+
+def stop_fixed_hyper_grads(grad_hyper, learn_prior_stddev=True, learn_likelihood_stddev=False):
+    """Zero gradients for hyperparameters the user wants fixed."""
+    return {
+        "prior_realstd": grad_hyper["prior_realstd"] if learn_prior_stddev else jnp.zeros_like(grad_hyper["prior_realstd"]),
+        "likelihood_realstd": grad_hyper["likelihood_realstd"] if learn_likelihood_stddev else jnp.zeros_like(grad_hyper["likelihood_realstd"]),
+    }
+
+
+def hyper_params_to_float_dict(hyper_params):
+    prior_stddev, likelihood_stddev = unpack_hyper_params(hyper_params)
+    return {
+        "prior_stddev": float(prior_stddev),
+        "likelihood_stddev": float(likelihood_stddev),
+    }
 
 
 # ---------------------------------------------------------------------
@@ -217,13 +261,14 @@ def calc_log_r_lambda0_given_z(lambda0_D, z_P, aux_params):
 def calc_hvm_elbo_one_sample(
         flow_params,
         aux_params,
+        hyper_params,
         key,
         x_ND,
         y_N,
         unflatten_fn,
         n_bnn_params,
-        prior_stddev=3.0,
-        likelihood_stddev=0.10,
+        n_train_total,
+        data_weight,
         use_sigmoid_output=False):
     key_lambda, key_z = jax.random.split(key)
 
@@ -248,6 +293,8 @@ def calc_hvm_elbo_one_sample(
         use_sigmoid_output=use_sigmoid_output,
     )
 
+    prior_stddev, likelihood_stddev = unpack_hyper_params(hyper_params)
+
     log_lik = jnp.sum(
         jstats.norm.logpdf(y_N, loc=pred_N, scale=likelihood_stddev)
     )
@@ -257,28 +304,41 @@ def calc_hvm_elbo_one_sample(
         prior_stddev=prior_stddev,
     )
 
-    log_r = calc_log_r_lambda0_given_z(
-        lambda0_D=lambda0_D,
+    log_r = calc_log_r_lambda_given_z(
+        lambda_D=lambda_D,
         z_P=z_P,
         aux_params=aux_params,
     )
 
-    # Hierarchical ELBO lower bound, scaled by minibatch size.
-    elbo = log_lik + log_prior_z + log_r - log_q_z_given_lambda - log_q_lambda
-    return elbo / x_ND.shape[0]
+    B = x_ND.shape[0]
+
+    global_terms = (
+        log_prior_z
+        + log_r
+        - log_q_z_given_lambda
+        - log_q_lambda
+    )
+
+    de_hvm_elbo_per_datapoint = (
+        data_weight * (log_lik / B)
+        + global_terms / n_train_total
+    )
+
+    return de_hvm_elbo_per_datapoint
 
 
 def calc_hvm_elbo(
         flow_params,
         aux_params,
+        hyper_params,
         key,
         x_ND,
         y_N,
         unflatten_fn,
         n_bnn_params,
+        n_train_total,
+        data_weight,
         n_mc_samples=5,
-        prior_stddev=3.0,
-        likelihood_stddev=0.10,
         use_sigmoid_output=False):
     keys = jax.random.split(key, n_mc_samples)
     total = 0.0
@@ -287,29 +347,29 @@ def calc_hvm_elbo(
         total = total + calc_hvm_elbo_one_sample(
             flow_params=flow_params,
             aux_params=aux_params,
+            hyper_params=hyper_params,
             key=keys[sample_id],
             x_ND=x_ND,
             y_N=y_N,
             unflatten_fn=unflatten_fn,
             n_bnn_params=n_bnn_params,
-            prior_stddev=prior_stddev,
-            likelihood_stddev=likelihood_stddev,
+            n_train_total=n_train_total,
+            data_weight=data_weight,
             use_sigmoid_output=use_sigmoid_output,
         )
 
     return total / n_mc_samples
 
 
-value_and_grad_hvm_elbo = jax.value_and_grad(calc_hvm_elbo, argnums=(0, 1))
+value_and_grad_hvm_elbo = jax.value_and_grad(calc_hvm_elbo, argnums=(0, 1, 2))
 
 fast_value_and_grad_hvm_elbo = jax.jit(
     value_and_grad_hvm_elbo,
     static_argnames=[
         "unflatten_fn",
         "n_bnn_params",
+        "n_train_total",
         "n_mc_samples",
-        "prior_stddev",
-        "likelihood_stddev",
         "use_sigmoid_output",
     ],
 )
@@ -381,7 +441,7 @@ def evaluate_hvm_rmse(
         seed=seed,
     )
     rmse = jnp.sqrt(jnp.mean((pred_mean_N - y_N) ** 2))
-    return rmse, pred_mean_N, pred_std_N
+    return rmse, pred_mean_N, pred_std_N, preds_SN
 
 
 # ---------------------------------------------------------------------
@@ -393,6 +453,8 @@ def train_hvm_bnn_upgrade(
         y_train_N,
         x_valid_ND,
         y_valid_N,
+        x_test_ND,
+        y_test_N,
         hidden_sizes,
         n_iters=2000,
         batch_size=64,
@@ -400,9 +462,13 @@ def train_hvm_bnn_upgrade(
         step_size=1e-4,
         prior_stddev=3.0,
         likelihood_stddev=0.10,
+        learn_prior_stddev=True,
+        learn_likelihood_stddev=False,
+        hyper_step_size=None,
         flow_length=2,
         flow_init_scale=1e-3,
         aux_init_stddev=1.0,
+        data_weight=None,
         use_sigmoid_output=False,
         n_valid_samples=20,
         seed=101,
@@ -417,9 +483,19 @@ def train_hvm_bnn_upgrade(
     )
     lambda_dim = 2 * n_bnn_params
 
+    N = x_train_ND.shape[0]
+
+    if data_weight is None:
+        data_weight = n_bnn_params / float(N)
+
     print("HVM BNN parameter count:", n_bnn_params)
     print("HVM lambda dimension:", lambda_dim)
     print("HVM flow length:", flow_length)
+    print("HVM train size N:", N)
+    print("DE-HVM data weight kappa:", data_weight)
+    print("Initial prior_stddev:", prior_stddev, "| learn:", learn_prior_stddev)
+    print("Initial likelihood_stddev:", likelihood_stddev, "| learn:", learn_likelihood_stddev)
+    print("Hyperparameter step size:", hyper_step_size if hyper_step_size is not None else step_size)
 
     flow_params = init_planar_flow_params(
         lambda_dim=lambda_dim,
@@ -434,18 +510,34 @@ def train_hvm_bnn_upgrade(
         init_stddev=aux_init_stddev,
     )
 
+    hyper_params = init_hyper_params(
+        prior_stddev=prior_stddev,
+        likelihood_stddev=likelihood_stddev,
+    )
+
+    if hyper_step_size is None:
+        hyper_step_size = step_size
+
     m_flow = zeros_like_pytree(flow_params)
     v_flow = zeros_like_pytree(flow_params)
     m_aux = zeros_like_pytree(aux_params)
     v_aux = zeros_like_pytree(aux_params)
+    m_hyper = zeros_like_pytree(hyper_params)
+    v_hyper = zeros_like_pytree(hyper_params)
 
     history = {
         "iter": [],
-        "train_hvm_elbo": [],
+        "train_de_hvm_elbo": [],
         "valid_rmse": [],
+        "test_rmse": [],
+        "prior_stddev": [],
+        "likelihood_stddev": [],
+        "is_best": [],
     }
 
-    N = x_train_ND.shape[0]
+    best_valid_rmse = np.inf
+    best_checkpoint = None
+
     start_time = time.time()
 
     for iter_id in range(1, n_iters + 1):
@@ -455,18 +547,25 @@ def train_hvm_bnn_upgrade(
 
         key, subkey = jax.random.split(key)
 
-        elbo, (grad_flow, grad_aux) = fast_value_and_grad_hvm_elbo(
+        elbo, (grad_flow, grad_aux, grad_hyper) = fast_value_and_grad_hvm_elbo(
             flow_params,
             aux_params,
+            hyper_params,
             subkey,
             xb_BD,
             yb_B,
             unflatten_fn=unflatten_fn,
             n_bnn_params=n_bnn_params,
+            n_train_total=N,
+            data_weight=data_weight,
             n_mc_samples=n_mc_samples,
-            prior_stddev=prior_stddev,
-            likelihood_stddev=likelihood_stddev,
             use_sigmoid_output=use_sigmoid_output,
+        )
+
+        grad_hyper = stop_fixed_hyper_grads(
+            grad_hyper,
+            learn_prior_stddev=learn_prior_stddev,
+            learn_likelihood_stddev=learn_likelihood_stddev,
         )
 
         flow_params, m_flow, v_flow = adam_update_pytree(
@@ -474,6 +573,9 @@ def train_hvm_bnn_upgrade(
         )
         aux_params, m_aux, v_aux = adam_update_pytree(
             aux_params, grad_aux, m_aux, v_aux, iter_id, step_size
+        )
+        hyper_params, m_hyper, v_hyper = adam_update_pytree(
+            hyper_params, grad_hyper, m_hyper, v_hyper, iter_id, hyper_step_size
         )
 
         if iter_id == 1 or iter_id % print_every == 0 or iter_id == n_iters:
@@ -488,18 +590,56 @@ def train_hvm_bnn_upgrade(
                 seed=seed + 5000 + iter_id,
             )
 
-            history["iter"].append(iter_id)
-            history["train_hvm_elbo"].append(float(elbo))
-            history["valid_rmse"].append(float(valid_rmse))
+            test_rmse, _, _ = evaluate_hvm_rmse(
+                flow_params=flow_params,
+                x_ND=x_test_ND,
+                y_N=y_test_N,
+                unflatten_fn=unflatten_fn,
+                n_bnn_params=n_bnn_params,
+                n_samples=n_valid_samples,
+                use_sigmoid_output=use_sigmoid_output,
+                seed=seed + 6000 + iter_id,
+            )
 
+            current_hyper = hyper_params_to_float_dict(hyper_params)
+
+            history["iter"].append(iter_id)
+            history["train_de_hvm_elbo"].append(float(elbo))
+            history["valid_rmse"].append(float(valid_rmse))
+            history["test_rmse"].append(float(test_rmse))
+            history["prior_stddev"].append(current_hyper["prior_stddev"])
+            history["likelihood_stddev"].append(current_hyper["likelihood_stddev"])
+
+            is_best = float(valid_rmse) < best_valid_rmse
+            history["is_best"].append(bool(is_best))
+
+            if is_best:
+                best_valid_rmse = float(valid_rmse)
+                best_checkpoint = {
+                    "iter": int(iter_id),
+                    "valid_rmse": float(valid_rmse),
+                    "test_rmse": float(test_rmse),
+                    "train_de_hvm_elbo": float(elbo),
+                    "flow_params": pytree_to_numpy(flow_params),
+                    "aux_params": pytree_to_numpy(aux_params),
+                    "hyper_params": pytree_to_numpy(hyper_params),
+                    "prior_stddev": float(current_hyper["prior_stddev"]),
+                    "likelihood_stddev": float(current_hyper["likelihood_stddev"]),
+                }
+
+            best_marker = " *BEST*" if is_best else ""
             print(
-                "iter %6d/%d | time %7.1f sec | HVM ELBO %.6f | valid RMSE %.6f"
+                "iter %6d/%d | time %7.1f sec | DE-HVM ELBO/datapoint %.6f | valid RMSE %.6f | test RMSE %.6f | prior_stddev %.6g | likelihood_stddev %.6g%s"
                 % (
                     iter_id,
                     n_iters,
                     time.time() - start_time,
                     float(elbo),
                     float(valid_rmse),
+                    float(test_rmse),
+                    current_hyper["prior_stddev"],
+                    current_hyper["likelihood_stddev"],
+                    best_marker,
                 )
             )
 
@@ -507,6 +647,22 @@ def train_hvm_bnn_upgrade(
         "unflatten_fn": unflatten_fn,
         "n_bnn_params": n_bnn_params,
         "lambda_dim": lambda_dim,
+        "data_weight": float(data_weight),
+        "n_train_total": int(N),
+        "initial_prior_stddev": float(prior_stddev),
+        "initial_likelihood_stddev": float(likelihood_stddev),
+        "final_prior_stddev": hyper_params_to_float_dict(hyper_params)["prior_stddev"],
+        "final_likelihood_stddev": hyper_params_to_float_dict(hyper_params)["likelihood_stddev"],
+        "learn_prior_stddev": bool(learn_prior_stddev),
+        "learn_likelihood_stddev": bool(learn_likelihood_stddev),
+        "hyper_step_size": float(hyper_step_size),
+        "best_iter": None if best_checkpoint is None else int(best_checkpoint["iter"]),
+        "best_valid_rmse": np.nan if best_checkpoint is None else float(best_checkpoint["valid_rmse"]),
+        "best_test_rmse": np.nan if best_checkpoint is None else float(best_checkpoint["test_rmse"]),
+        "best_train_de_hvm_elbo": np.nan if best_checkpoint is None else float(best_checkpoint["train_de_hvm_elbo"]),
+        "best_prior_stddev": np.nan if best_checkpoint is None else float(best_checkpoint["prior_stddev"]),
+        "best_likelihood_stddev": np.nan if best_checkpoint is None else float(best_checkpoint["likelihood_stddev"]),
+        "best_checkpoint": best_checkpoint,
     }
 
-    return flow_params, aux_params, history, info
+    return flow_params, aux_params, hyper_params, history, info
